@@ -1,0 +1,37 @@
+{{- if .Values.ingressAPI.enabled -}}
+{{- $serviceName := include "luigi.fullname" . -}}
+{{- $servicePort := .Values.service.externalPort -}}
+apiVersion: networking.k8s.io/v1beta1
+kind: Ingress
+metadata:
+  name: {{ template "luigi.fullname" . }}-api
+  labels:
+    app: {{ template "luigi.name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+  annotations:
+    {{- range $key, $value := .Values.ingressAPI.annotations }}
+      {{ $key }}: {{ $value | quote }}
+    {{- end }}
+spec:
+  selector:
+    matchLabels:
+      app: {{ template "luigi.name" . }}
+      release: {{ .Release.Name }}
+  rules:
+    {{- range $host := .Values.ingressAPI.hosts }}
+    - host: {{ $host }}
+      http:
+        paths:
+          - path: /
+            backend:
+              serviceName: {{ $serviceName }}
+              servicePort: {{ $servicePort }}
+    {{- end -}}
+  {{- if .Values.ingressAPI.tls }}
+  tls:
+{{ toYaml .Values.ingressAPI.tls | indent 4 }}
+  {{- end -}}
+{{- end -}}
+
